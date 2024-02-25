@@ -11,20 +11,6 @@ const cameraSelectionReducer = (state, action) => {
         isLoading: true,
       }
     }
-    case 'REQUEST_CAMERA_TYPES_SUCCESS': {
-      return {
-        ...state,
-        isLoading: false,
-        camera_types: action.payload,
-      }
-    }
-    case 'REQUEST_OUTFIT_TYPES_SUCCESS': {
-      return {
-        ...state,
-        isLoading: false,
-        outfit_types: action.payload,
-      }
-    }
     case 'REQUEST_CAMERAS_SUCCESS': {
       return {
         ...state,
@@ -66,27 +52,19 @@ const cameraOptionsReducer = (state, action) => {
 
 function App() {
   const [cameraSelection, dispatchCameraSelection] = React.useReducer(cameraSelectionReducer, {
-    cameras: [], camera_types: [], outfit_types: [], isLoading: false
+    cameras: [], isLoading: false
   })
+  const [cameraOutfitTypes, setCameraOutfitTypes] = React.useState([]);
+  const [cameraTypes, setCameraTypes] = React.useState([]);
+  const [cameraResolutions, setCameraResolutions] = React.useState([]);
   const [cameraOptions, dispatchCameraOptions] = React.useReducer(cameraOptionsReducer, { camera_type: null, outfit_type: null, resolution: null })
 
   const handleFetchCameraTypes = React.useCallback(() => {
-    dispatchCameraSelection({ type: 'REQUEST_IN_PROGRESS' })
-    console.log("Fetching")
-
     const response = async () => {
       let data;
-      try {
-        const res = await axios.get('http://localhost:3001/camera_type');
-        data = await res.data;
-      }
-      catch {
-        throw new Error('Fetch fail')
-      }
-      finally {
-        if (!data) throw new Error('Undefined data')
-        dispatchCameraSelection({ type: 'REQUEST_CAMERA_TYPES_SUCCESS', payload: data });
-      }
+      const res = await axios.get('http://localhost:3001/camera/getCameraTypes');
+      data = await res.data;
+      setCameraTypes(data);
     }
     response();
   }, [cameraOptions])
@@ -111,46 +89,67 @@ function App() {
     dispatchCameraOptions({ type: 'REQUEST_IN_PROGRESS' })
 
     const response = async () => {
-      const res = await axios.get(`http://localhost:3001/outfit_type${
+      const res = await axios.get(`http://localhost:3001/camera/getOutfitTypes${
         (cameraOptions.camera_type && "?camera_type=" + cameraOptions.camera_type + "&")
       }`);
       const data = await res.data;
-      dispatchCameraSelection({ type: 'REQUEST_OUTFIT_TYPES_SUCCESS', payload: data });
+      setCameraOutfitTypes(data);
+    }
+    response();
+  }, [cameraOptions])
+
+  const handleFetchResolution = React.useCallback(() => {
+    const response = async () => {
+      let data;
+      const res = await axios.get(`http://localhost:3001/camera/getResolutions?camera_type=${cameraOptions.camera_type}&outfit_type=${cameraOptions.outfit_type}`);
+      data = await res.data;
+      setCameraResolutions(data);
     }
     response();
   }, [cameraOptions])
 
   const handleSetCameraType = (e) => {
-    dispatchCameraOptions({ type: 'SET_CAMERA_TYPE', payload: e.target.selectedIndex })
+    dispatchCameraOptions({ type: 'SET_CAMERA_TYPE', payload: e.target.value })
   }
 
   const handleSetOutfitType = (e) => {
-    console.log(e);
+    dispatchCameraOptions({ type: 'SET_OUTFIT_TYPE', payload: e.target.value })
   }
 
   React.useEffect(() => {
     handleFetchCameraTypes();
-  }, [])
+    handleFetchOutfitType();
+    handleFetchResolution();
+  }, [cameraOptions])
 
   return (
     <div className="App">
       <label>Camera Type: </label>
-      <select onClick={(e) => {handleSetCameraType(e); handleFetchOutfitType()}}>
+      <select onClick={(e) => {handleSetCameraType(e);}}>
         <option>Select One</option>
-        <ItemOptions items={cameraSelection.camera_types} />
+        <ItemOptions items={cameraSelection.cameras} />
+        {
+          cameraTypes.map((item, idx) => {
+            return <option key={idx} >{item.camera_type}</option>
+          })
+        }
       </select>
       <hr/>
       <label>Outfit Type: </label>
       <select onClick={(e) => {handleSetOutfitType(e)}}>
         <option>Select One</option>
-        <ItemOptions items={cameraSelection.outfit_types} />
+        {
+          cameraOutfitTypes.map((item, idx) => {
+            return <option key={idx} >{item.outfit_type}</option>
+          })
+        }
       </select>
       <hr/>
       <label>Resolution (MP): </label>
-      <select onClick={handleFetchCameras}>
+      <select>
         <option>Select one</option>
-        {cameraSelection.cameras.map(cam => {
-          return <option key={cam.id} id={cam.id} >{cam.resolution}</option>
+        {cameraResolutions.map((item, idx) => {
+          return <option key={idx} >{item.resolution}</option>
         })}
       </select>
     </div>
@@ -159,8 +158,8 @@ function App() {
 
 const ItemOptions = ({ items }) => {
   return (
-      items.map(item => {
-        return <option key={item.id} id={item.id} >{item.name}</option>
+      items.map((item, idx) => {
+        return <option key={idx} >{item.camera_type}</option>
       })
   )
 }
