@@ -44,6 +44,18 @@ const cameraOptionsReducer = (state, action) => {
         resolution: action.payload,
       }
     }
+    case 'SET_SETUP': {
+      return {
+        ...state,
+        comeWithSetup: action.payload,
+      }
+    }
+    case 'SET_ALL': {
+      return {
+        ...state,
+        ...action.payload,
+      }
+    }
     default: {
       return state
     }
@@ -57,7 +69,14 @@ function App() {
   const [cameraOutfitTypes, setCameraOutfitTypes] = React.useState([]);
   const [cameraTypes, setCameraTypes] = React.useState([]);
   const [cameraResolutions, setCameraResolutions] = React.useState([]);
-  const [cameraOptions, dispatchCameraOptions] = React.useReducer(cameraOptionsReducer, { camera_type: null, outfit_type: null, resolution: null })
+  const [cameraOptions, dispatchCameraOptions] = React.useReducer(cameraOptionsReducer,
+    { camera_type: null, outfit_type: null, resolution: null, comeWithSetup: true }
+  );
+
+  const cameraTypeRef = React.useRef(null);
+  const outfitTypeRef = React.useRef(null);
+  const resolutionRef = React.useRef(null);
+  const withSetupRef = React.useRef(null);
 
   const handleFetchCameraTypes = React.useCallback(() => {
     const response = async () => {
@@ -70,13 +89,12 @@ function App() {
   }, [cameraOptions])
 
   const handleFetchCameras = React.useCallback(() => {
-    dispatchCameraOptions({ type: 'REQUEST_IN_PROGRESS' })
-
+    dispatchCameraSelection({ type: 'REQUEST_IN_PROGRESS' });
     const response = async () => {
       const res = await axios.get(`http://localhost:3001/camera${
         (cameraOptions.camera_type && "?camera_type=" + cameraOptions.camera_type + "&") +
-        (cameraOptions.outfit_type && "?outfit_type=" + cameraOptions.outfit_type + "&") +
-        (cameraOptions.resolution && "?resolution=" + cameraOptions.resolution + "&")
+        (cameraOptions.outfit_type && "outfit_type=" + cameraOptions.outfit_type + "&") +
+        (cameraOptions.resolution && "resolution=" + cameraOptions.resolution + "&")
       }`);
       const data = await res.data;
       dispatchCameraSelection({ type: 'REQUEST_CAMERAS_SUCCESS', payload: data });
@@ -108,12 +126,21 @@ function App() {
     response();
   }, [cameraOptions])
 
-  const handleSetCameraType = (e) => {
-    dispatchCameraOptions({ type: 'SET_CAMERA_TYPE', payload: e.target.value })
+  const handleSetResolution = (e) => {
+    if (isNaN(e.target.value))
+    {
+      dispatchCameraOptions({ type: 'SET_RESOLUTION', payload: null});
+      return;
+    }
+    dispatchCameraOptions({ type: 'SET_RESOLUTION', payload: parseInt(e.target.value)});
   }
 
-  const handleSetOutfitType = (e) => {
-    dispatchCameraOptions({ type: 'SET_OUTFIT_TYPE', payload: e.target.value })
+  const handleSetCameraOptions = () => {
+    dispatchCameraOptions({ type: 'SET_ALL', payload: {
+      camera_type: cameraTypeRef.current.value.toLowerCase() === "válassz egyet" ? null : cameraTypeRef.current.value,
+      outfit_type: outfitTypeRef.current.value.toLowerCase() === "válassz egyet" ? null : outfitTypeRef.current.value,
+      comeWithSetup: withSetupRef.current.value.toLowerCase() === "igen" ? true : false,
+    } })
   }
 
   React.useEffect(() => {
@@ -124,10 +151,9 @@ function App() {
 
   return (
     <div className="App">
-      <label>Camera Type: </label>
-      <select onClick={(e) => {handleSetCameraType(e);}}>
-        <option>Select One</option>
-        <ItemOptions items={cameraSelection.cameras} />
+      <label>Milyen Típusú kamerát keresel? </label>
+      <select ref={cameraTypeRef} value={cameraOptions.camera_type} onChange={handleSetCameraOptions}>
+        <option>Válassz Egyet</option>
         {
           cameraTypes.map((item, idx) => {
             return <option key={idx} >{item.camera_type}</option>
@@ -135,9 +161,9 @@ function App() {
         }
       </select>
       <hr/>
-      <label>Outfit Type: </label>
-      <select onClick={(e) => {handleSetOutfitType(e)}}>
-        <option>Select One</option>
+      <label>Milyen kialakítású legyen? </label>
+      <select ref={outfitTypeRef} value={cameraOptions.outfit_type} onChange={handleSetCameraOptions}>
+        <option>Válassz Egyet</option>
         {
           cameraOutfitTypes.map((item, idx) => {
             return <option key={idx} >{item.outfit_type}</option>
@@ -145,23 +171,28 @@ function App() {
         }
       </select>
       <hr/>
-      <label>Resolution (MP): </label>
-      <select>
-        <option>Select one</option>
+      <label>Hány mp legyen a kamera? </label>
+      <select ref={resolutionRef} value={cameraOptions.resolution} onChange={(e) => handleSetResolution(e)} >
+        <option>Válassz Egyet</option>
         {cameraResolutions.map((item, idx) => {
           return <option key={idx} >{item.resolution}</option>
         })}
       </select>
+      <hr/>
+      <label>Beüzemeléssel szeretnéd rendelni? </label>
+      <select ref={withSetupRef} value={cameraOptions.comeWithSetup === true ? "Igen" : "Nem"} onChange={handleSetCameraOptions} >
+        <option>Igen</option>
+        <option>Nem</option>
+      </select>
+      <hr/>
+      {cameraOptions.camera_type && cameraOptions.outfit_type && cameraOptions.resolution &&
+        <button onClick={handleFetchCameras} >Kérem</button>}
+      <hr/>
+      <div>
+        {cameraSelection.cameras.length !== 0 && <strong>{cameraSelection.cameras[0].name}</strong>}
+      </div>
     </div>
   );
-}
-
-const ItemOptions = ({ items }) => {
-  return (
-      items.map((item, idx) => {
-        return <option key={idx} >{item.camera_type}</option>
-      })
-  )
 }
 
 export default App;
