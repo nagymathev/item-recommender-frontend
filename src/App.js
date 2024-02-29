@@ -1,4 +1,5 @@
 import './App.css';
+import 'dotenv/config'
 
 import React from 'react';
 import axios from 'axios';
@@ -94,7 +95,7 @@ function App() {
   const handleFetchCameraTypes = React.useCallback(() => {
     const response = async () => {
       let data;
-      const res = await axios.get('http://localhost:3001/camera/getCameraTypes');
+      const res = await axios.get(`http://${process.env.BACKEND_URL}:${process.env.BACKEND_PORT}/camera/getCameraTypes`);
       data = await res.data;
       setCameraTypes(data);
     }
@@ -104,7 +105,7 @@ function App() {
   const handleFetchCameras = React.useCallback(() => {
     dispatchCameraSelection({ type: 'REQUEST_IN_PROGRESS' });
     const response = async () => {
-      const res = await axios.get(`http://localhost:3001/camera${
+      const res = await axios.get(`http://${process.env.BACKEND_URL}:${process.env.BACKEND_PORT}/camera${
         (cameraOptions.camera_type && "?camera_type=" + cameraOptions.camera_type + "&") +
         (cameraOptions.outfit_type && "outfit_type=" + cameraOptions.outfit_type + "&") +
         (cameraOptions.resolution && "resolution=" + cameraOptions.resolution + "&")
@@ -118,7 +119,7 @@ function App() {
   const handleFetchMount = React.useCallback(() => {
     dispatchCameraSelection({ type: 'REQUEST_IN_PROGRESS' });
     const response = async () => {
-      const res = await axios.get(`http://localhost:3001/camera_mount?numofcams=${cameraOptions.numberOfCameras}`);
+      const res = await axios.get(`http://${process.env.BACKEND_URL}:${process.env.BACKEND_PORT}/camera_mount?numofcams=${cameraOptions.numberOfCameras}`);
       const data = await res.data;
       dispatchCameraSelection({ type: 'REQUEST_MOUNT_SUCCESS', payload: data})
     }
@@ -130,7 +131,7 @@ function App() {
     dispatchCameraOptions({ type: 'REQUEST_IN_PROGRESS' })
 
     const response = async () => {
-      const res = await axios.get(`http://localhost:3001/camera/getOutfitTypes${
+      const res = await axios.get(`http://${process.env.BACKEND_URL}:${process.env.BACKEND_PORT}/camera/getOutfitTypes${
         (cameraOptions.camera_type && "?camera_type=" + cameraOptions.camera_type + "&")
       }`);
       const data = await res.data;
@@ -142,7 +143,7 @@ function App() {
   const handleFetchResolution = React.useCallback(() => {
     const response = async () => {
       let data;
-      const res = await axios.get(`http://localhost:3001/camera/getResolutions?camera_type=${cameraOptions.camera_type}&outfit_type=${cameraOptions.outfit_type}`);
+      const res = await axios.get(`http://${process.env.BACKEND_URL}:${process.env.BACKEND_PORT}/camera/getResolutions?camera_type=${cameraOptions.camera_type}&outfit_type=${cameraOptions.outfit_type}`);
       data = await res.data;
       setCameraResolutions(data);
     }
