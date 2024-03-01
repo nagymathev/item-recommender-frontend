@@ -76,6 +76,7 @@ const cameraOptionsReducer = (state, action) => {
 }
 
 function App() {
+
   const [cameraSelection, dispatchCameraSelection] = React.useReducer(cameraSelectionReducer, {
     cameras: [], mounts: [], isLoading: false
   })
@@ -94,9 +95,14 @@ function App() {
   const handleFetchCameraTypes = React.useCallback(() => {
     const response = async () => {
       let data;
-      const res = await axios.get(`http://${process.env.BACKEND_URL}:${process.env.BACKEND_PORT}/camera/getCameraTypes`);
-      data = await res.data;
-      setCameraTypes(data);
+      try {
+        const res = await axios.get(`http://${process.env.REACT_APP_BACKEND_URL}:${process.env.REACT_APP_BACKEND_PORT}/camera/getCameraTypes`);
+        data = await res.data;
+        setCameraTypes(data);
+      }
+      catch(e) {
+        console.error("Error: Axios failed:", e);
+      }
     }
     response();
   }, [cameraOptions])
@@ -104,13 +110,18 @@ function App() {
   const handleFetchCameras = React.useCallback(() => {
     dispatchCameraSelection({ type: 'REQUEST_IN_PROGRESS' });
     const response = async () => {
-      const res = await axios.get(`http://${process.env.BACKEND_URL}:${process.env.BACKEND_PORT}/camera${
-        (cameraOptions.camera_type && "?camera_type=" + cameraOptions.camera_type + "&") +
-        (cameraOptions.outfit_type && "outfit_type=" + cameraOptions.outfit_type + "&") +
-        (cameraOptions.resolution && "resolution=" + cameraOptions.resolution + "&")
-      }`);
-      const data = await res.data;
-      dispatchCameraSelection({ type: 'REQUEST_CAMERAS_SUCCESS', payload: data });
+      try {
+        const res = await axios.get(`http://${process.env.REACT_APP_BACKEND_URL}:${process.env.REACT_APP_BACKEND_PORT}/camera${
+          (cameraOptions.camera_type && "?camera_type=" + cameraOptions.camera_type + "&") +
+          (cameraOptions.outfit_type && "outfit_type=" + cameraOptions.outfit_type + "&") +
+          (cameraOptions.resolution && "resolution=" + cameraOptions.resolution + "&")
+        }`);
+        const data = await res.data;
+        dispatchCameraSelection({ type: 'REQUEST_CAMERAS_SUCCESS', payload: data });
+      }
+      catch(e) {
+        console.error("Error: Axios failed:", e);
+      }
     }
     response();
   }, [cameraOptions])
@@ -118,9 +129,14 @@ function App() {
   const handleFetchMount = React.useCallback(() => {
     dispatchCameraSelection({ type: 'REQUEST_IN_PROGRESS' });
     const response = async () => {
-      const res = await axios.get(`http://${process.env.BACKEND_URL}:${process.env.BACKEND_PORT}/camera_mount?numofcams=${cameraOptions.numberOfCameras}`);
-      const data = await res.data;
-      dispatchCameraSelection({ type: 'REQUEST_MOUNT_SUCCESS', payload: data})
+      try {
+        const res = await axios.get(`http://${process.env.REACT_APP_BACKEND_URL}:${process.env.REACT_APP_BACKEND_PORT}/camera_mount?numofcams=${cameraOptions.numberOfCameras}`);
+        const data = await res.data;
+        dispatchCameraSelection({ type: 'REQUEST_MOUNT_SUCCESS', payload: data})
+      }
+      catch(e) {
+        console.error("Error: Axios failed:", e);
+      }
     }
     response();
   }, [cameraOptions])
@@ -130,11 +146,16 @@ function App() {
     dispatchCameraOptions({ type: 'REQUEST_IN_PROGRESS' })
 
     const response = async () => {
-      const res = await axios.get(`http://${process.env.BACKEND_URL}:${process.env.BACKEND_PORT}/camera/getOutfitTypes${
-        (cameraOptions.camera_type && "?camera_type=" + cameraOptions.camera_type + "&")
-      }`);
-      const data = await res.data;
-      setCameraOutfitTypes(data);
+      try {
+        const res = await axios.get(`http://${process.env.REACT_APP_BACKEND_URL}:${process.env.REACT_APP_BACKEND_PORT}/camera/getOutfitTypes${
+          (cameraOptions.camera_type && "?camera_type=" + cameraOptions.camera_type + "&")
+        }`);
+        const data = await res.data;
+        setCameraOutfitTypes(data);
+      }
+      catch(e) {
+        console.error("Error: Axios failed:", e);
+      }
     }
     response();
   }, [cameraOptions])
@@ -142,9 +163,13 @@ function App() {
   const handleFetchResolution = React.useCallback(() => {
     const response = async () => {
       let data;
-      const res = await axios.get(`http://${process.env.BACKEND_URL}:${process.env.BACKEND_PORT}/camera/getResolutions?camera_type=${cameraOptions.camera_type}&outfit_type=${cameraOptions.outfit_type}`);
-      data = await res.data;
-      setCameraResolutions(data);
+      try {
+        const res = await axios.get(`http://${process.env.REACT_APP_BACKEND_URL}:${process.env.REACT_APP_BACKEND_PORT}/camera/getResolutions?camera_type=${cameraOptions.camera_type}&outfit_type=${cameraOptions.outfit_type}`);
+        data = await res.data;
+        setCameraResolutions(data);
+      } catch(e) {
+        console.error("Error: Axios failed:", e);
+      }
     }
     response();
   }, [cameraOptions])
@@ -268,7 +293,7 @@ const ResultsMenu = ({camera, mount, numOfCams, comesWithSetup, isLoading}) => {
   return (
     <div>
       <h3>Megfelelő Kamera:</h3>
-      {!isLoading && 
+      {!isLoading && camera && 
         <>
           <strong>{camera.name}</strong>
           <br/>
@@ -279,14 +304,23 @@ const ResultsMenu = ({camera, mount, numOfCams, comesWithSetup, isLoading}) => {
       
 
       <h3>Hozzá tartozó rögzítő:</h3>
-      <strong>{mount.name}</strong>
-      <br/>
-      <span className={comesWithSetup ? "line-through" : undefined} style={{marginRight: "1rem"}} >{mount.price}Ft</span>
-      {comesWithSetup && <span>{mount.price * 0.9}Ft</span>}
+      {!isLoading && mount && 
+        <>
+          <strong>{mount.name}</strong>
+          <br/>
+          <span className={comesWithSetup ? "line-through" : undefined} style={{marginRight: "1rem"}} >{mount.price}Ft</span>
+          {comesWithSetup && <span>{mount.price * 0.9}Ft</span>}
+
+        </>
+      }
 
       <h3>Összesen:</h3>
-      <span className={comesWithSetup ? "line-through" : undefined} style={{marginRight: "1rem"}}>{camera.price * numOfCams + mount.price}Ft</span>
-      {comesWithSetup && <span>{(camera.price * 0.9) * numOfCams + mount.price * 0.9}Ft</span>}
+      {!isLoading && camera && mount &&
+        <>
+          <span className={comesWithSetup ? "line-through" : undefined} style={{marginRight: "1rem"}}>{camera.price * numOfCams + mount.price}Ft</span>
+          {comesWithSetup && <span>{(camera.price * 0.9) * numOfCams + mount.price * 0.9}Ft</span>}
+        </>
+      }
     </div>
   )
 }
